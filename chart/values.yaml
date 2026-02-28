@@ -2,8 +2,8 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/mvs5465/cluster-query-router
-  tag: "latest"
-  pullPolicy: IfNotPresent
+  tag: "main"
+  pullPolicy: Always
 
 nameOverride: ""
 fullnameOverride: ""
