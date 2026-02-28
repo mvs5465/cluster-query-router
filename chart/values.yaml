@@ -21,9 +21,6 @@ resources:
     cpu: "500m"
 
 env:
-  LOKI_MCP_URL: "http://loki-mcp.monitoring.svc.cluster.local:8000"
-  PROMETHEUS_MCP_URL: "http://prometheus-mcp.monitoring.svc.cluster.local:8080"
-  OLLAMA_URL: "http://ollama-external.ai.svc.cluster.local:11434"
   OLLAMA_MODEL: "phi4-mini:latest"
 
 nodeSelector: {}
