@@ -39,6 +39,11 @@ otel:
   insecure: true
   serviceName: "cluster-query-router"
 
+metrics:
+  enabled: true
+  path: /metrics
+  job: "ai/cluster-query-router"
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

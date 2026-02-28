@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from urllib.parse import urlparse
 from dataclasses import dataclass
 from typing import Any
@@ -18,8 +19,9 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import SpanKind, Status, StatusCode
 from fastapi import FastAPI, HTTPException
 from fastapi import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -29,6 +31,16 @@ MCP_HEADERS = {
 }
 TRACER_NAME = "cluster-query-router"
 _TRACING_CONFIGURED = False
+HTTP_REQUESTS = Counter(
+    "cluster_query_router_http_requests_total",
+    "Total HTTP requests handled by cluster-query-router.",
+    ["method", "handler", "status"],
+)
+HTTP_REQUEST_DURATION = Histogram(
+    "cluster_query_router_http_request_duration_seconds",
+    "HTTP request latency for cluster-query-router.",
+    ["method", "handler"],
+)
 
 INDEX_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -858,6 +870,10 @@ summarizer = OllamaSummarizer(
 
 @app.middleware("http")
 async def trace_requests(request: Request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    started_at = time.perf_counter()
     tracer = trace.get_tracer(TRACER_NAME)
     with tracer.start_as_current_span(
         f"{request.method} {request.url.path}",
@@ -874,15 +890,30 @@ async def trace_requests(request: Request, call_next):
             span.set_status(Status(StatusCode.ERROR))
             raise
 
+        handler = request.url.path
+        duration = max(time.perf_counter() - started_at, 0.0)
+        HTTP_REQUEST_DURATION.labels(
+            method=request.method,
+            handler=handler,
+        ).observe(duration)
+        HTTP_REQUESTS.labels(
+            method=request.method,
+            handler=handler,
+            status=str(response.status_code),
+        ).inc()
         span.set_attribute("http.response.status_code", response.status_code)
         if response.status_code >= 500:
             span.set_status(Status(StatusCode.ERROR))
         return response
 
-
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     return HTMLResponse(INDEX_HTML)
+
+
+@app.get("/metrics")
+async def metrics() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/health")

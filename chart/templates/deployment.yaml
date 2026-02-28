@@ -11,6 +11,13 @@ spec:
       {{- include "cluster-query-router.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- if .Values.metrics.enabled }}
+      annotations:
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/job: {{ .Values.metrics.job | quote }}
+        k8s.grafana.com/metrics.path: {{ .Values.metrics.path | quote }}
+        k8s.grafana.com/metrics.portName: "http"
+      {{- end }}
       labels:
         {{- include "cluster-query-router.selectorLabels" . | nindent 8 }}
     spec:
