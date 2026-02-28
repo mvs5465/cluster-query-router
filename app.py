@@ -114,10 +114,38 @@ INDEX_HTML = """<!DOCTYPE html>
       flex-wrap: wrap;
     }
 
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #f9f5e9;
+      color: var(--ink);
+      padding: 10px 16px;
+    }
+
+    .tab-button.active {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
     .prompt-grid {
       display: grid;
       gap: 10px;
-      margin-top: 18px;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
 
@@ -146,6 +174,16 @@ INDEX_HTML = """<!DOCTYPE html>
       color: var(--muted);
       font-weight: 500;
       font-size: 0.82rem;
+    }
+
+    .prompt-groups {
+      display: grid;
+      gap: 18px;
+    }
+
+    .prompt-group h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
     }
 
     button {
@@ -226,37 +264,132 @@ INDEX_HTML = """<!DOCTYPE html>
     <p class="intro">Ask a plain-English cluster question. The app routes it to a real MCP tool, then summarizes the result.</p>
 
     <section class="panel wide">
-      <label for="question">Question</label>
-      <textarea id="question" spellcheck="false">What errors are happening in my cluster right now?</textarea>
-      <div class="controls">
-        <button id="submit" type="button">Ask</button>
-        <span class="status" id="status">Ready.</span>
+      <div class="tabs">
+        <button id="askTabButton" class="tab-button active" type="button" data-tab="askTab">Ask</button>
+        <button id="libraryTabButton" class="tab-button" type="button" data-tab="libraryTab">Prompt Library</button>
       </div>
-      <div class="prompt-grid">
-        <button class="prompt-card" type="button" data-prompt="What errors are happening in my cluster right now?">
-          What errors are happening right now?
-          <small>Broad cluster-wide Loki error scan.</small>
-        </button>
-        <button class="prompt-card" type="button" data-prompt="Which pods are restarting in the ai namespace in the last 2 hours?">
-          Which pods are restarting in AI?
-          <small>Find restart and crash patterns.</small>
-        </button>
-        <button class="prompt-card" type="button" data-prompt="What is the health status of Prometheus right now?">
-          Is Prometheus healthy?
-          <small>Quick Prometheus health check.</small>
-        </button>
-        <button class="prompt-card" type="button" data-prompt="Show me logs from ollama in the ai namespace">
-          Show logs from Ollama
-          <small>Pull recent pod logs for a specific workload.</small>
-        </button>
-        <button class="prompt-card" type="button" data-prompt='Search for "timeout" in the ai namespace'>
-          Search for timeout errors
-          <small>Regex log search scoped to AI.</small>
-        </button>
-        <button class="prompt-card" type="button" data-prompt="What namespaces have logs in Loki?">
-          What namespaces have logs?
-          <small>List namespaces seen by Loki.</small>
-        </button>
+
+      <div id="askTab" class="tab-panel active">
+        <label for="question">Question</label>
+        <textarea id="question" spellcheck="false">What errors are happening in my cluster right now?</textarea>
+        <div class="controls">
+          <button id="submit" type="button">Ask</button>
+          <span class="status" id="status">Ready.</span>
+        </div>
+      </div>
+
+      <div id="libraryTab" class="tab-panel">
+        <div class="prompt-groups">
+          <section class="prompt-group">
+            <h3>Cluster Health</h3>
+            <div class="prompt-grid">
+              <button class="prompt-card" type="button" data-prompt="What errors are happening in my cluster right now?">
+                What errors are happening right now?
+                <small>Broad cluster-wide Loki error scan.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="What is the health status of Prometheus right now?">
+                Is Prometheus healthy?
+                <small>Quick Prometheus health check.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="What namespaces have logs in Loki?">
+                What namespaces have logs?
+                <small>List namespaces seen by Loki.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="What errors are happening in the ai namespace right now?">
+                What errors are happening in AI?
+                <small>Scope the error scan to the AI namespace.</small>
+              </button>
+            </div>
+          </section>
+
+          <section class="prompt-group">
+            <h3>Restarts And Crashes</h3>
+            <div class="prompt-grid">
+              <button class="prompt-card" type="button" data-prompt="Which pods are restarting in the ai namespace in the last 2 hours?">
+                Which pods are restarting in AI?
+                <small>Find restart and crash patterns.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="Which pods are restarting in the monitoring namespace in the last 4 hours?">
+                Which pods are restarting in monitoring?
+                <small>Focus on monitoring stack churn.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="Which pods are crashing in my cluster in the last 6 hours?">
+                Which pods are crashing cluster-wide?
+                <small>Wider time window for instability.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="Which pods are restarting in the services namespace in the last 2 hours?">
+                Which pods are restarting in services?
+                <small>Check your user-facing services.</small>
+              </button>
+            </div>
+          </section>
+
+          <section class="prompt-group">
+            <h3>Logs And Search</h3>
+            <div class="prompt-grid">
+              <button class="prompt-card" type="button" data-prompt="Show me logs from ollama in the ai namespace">
+                Show logs from Ollama
+                <small>Pull recent pod logs for a specific workload.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="Show me logs from cluster-query-router in the ai namespace">
+                Show logs from cluster-query-router
+                <small>Check the router service directly.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="Show me logs from loki-mcp in the monitoring namespace">
+                Show logs from loki-mcp
+                <small>Inspect the Loki MCP server.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="Show me logs from ollama-mcp-bridge in the ai namespace">
+                Show logs from ollama-mcp-bridge
+                <small>Inspect the bridge connection layer.</small>
+              </button>
+            </div>
+          </section>
+
+          <section class="prompt-group">
+            <h3>Search Patterns</h3>
+            <div class="prompt-grid">
+              <button class="prompt-card" type="button" data-prompt='Search for "timeout" in the ai namespace'>
+                Search for timeout errors
+                <small>Regex log search scoped to AI.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt='Search for "connection refused" in the monitoring namespace'>
+                Search for connection refused
+                <small>Look for service connectivity failures.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt='Search for "error" in the services namespace'>
+                Search for error in services
+                <small>Broad error keyword search for user services.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt='Search for "authentication" in the ai namespace'>
+                Search for authentication issues
+                <small>Look for auth failures in AI components.</small>
+              </button>
+            </div>
+          </section>
+
+          <section class="prompt-group">
+            <h3>Common Follow-Ups</h3>
+            <div class="prompt-grid">
+              <button class="prompt-card" type="button" data-prompt="What errors are happening in the monitoring namespace in the last 4 hours?">
+                What errors are happening in monitoring?
+                <small>Drill into the observability stack.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="What errors are happening in the services namespace in the last 4 hours?">
+                What errors are happening in services?
+                <small>Check user-facing app failures.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="What errors are happening in the outline namespace in the last 4 hours?">
+                What errors are happening in outline?
+                <small>Inspect the outline app specifically.</small>
+              </button>
+              <button class="prompt-card" type="button" data-prompt="What errors are happening in the external-secrets namespace in the last 4 hours?">
+                What errors are happening in external-secrets?
+                <small>Check secret sync and controller issues.</small>
+              </button>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
 
@@ -292,6 +425,17 @@ INDEX_HTML = """<!DOCTYPE html>
     const summaryEl = document.getElementById("summary");
     const rawResultEl = document.getElementById("rawResult");
     const promptEls = document.querySelectorAll(".prompt-card");
+    const tabButtonEls = document.querySelectorAll(".tab-button");
+    const tabPanelEls = document.querySelectorAll(".tab-panel");
+
+    function showTab(tabName) {
+      tabButtonEls.forEach((element) => {
+        element.classList.toggle("active", element.dataset.tab === tabName);
+      });
+      tabPanelEls.forEach((element) => {
+        element.classList.toggle("active", element.id === tabName);
+      });
+    }
 
     async function askQuestion() {
       const question = questionEl.value.trim();
@@ -334,9 +478,13 @@ INDEX_HTML = """<!DOCTYPE html>
     }
 
     submitEl.addEventListener("click", askQuestion);
+    tabButtonEls.forEach((element) => {
+      element.addEventListener("click", () => showTab(element.dataset.tab));
+    });
     promptEls.forEach((element) => {
       element.addEventListener("click", () => {
         questionEl.value = element.dataset.prompt || "";
+        showTab("askTab");
         askQuestion();
       });
     });
