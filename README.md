@@ -16,6 +16,8 @@ It maps a small set of plain-English questions to direct MCP tool calls, then us
 
 A small web UI for asking questions, viewing the summary, and inspecting the raw tool output.
 
+The UI also includes several suggested prompts for common checks so users can click into the main flows quickly.
+
 `POST /ask`
 
 ```json

@@ -114,6 +114,40 @@ INDEX_HTML = """<!DOCTYPE html>
       flex-wrap: wrap;
     }
 
+    .prompt-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .prompt-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fbf8ee;
+      padding: 12px 14px;
+      text-align: left;
+      color: var(--ink);
+      font-weight: 600;
+      line-height: 1.35;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .prompt-card:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      background: #fffdf4;
+    }
+
+    .prompt-card small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.82rem;
+    }
+
     button {
       border: 0;
       border-radius: 999px;
@@ -198,6 +232,32 @@ INDEX_HTML = """<!DOCTYPE html>
         <button id="submit" type="button">Ask</button>
         <span class="status" id="status">Ready.</span>
       </div>
+      <div class="prompt-grid">
+        <button class="prompt-card" type="button" data-prompt="What errors are happening in my cluster right now?">
+          What errors are happening right now?
+          <small>Broad cluster-wide Loki error scan.</small>
+        </button>
+        <button class="prompt-card" type="button" data-prompt="Which pods are restarting in the ai namespace in the last 2 hours?">
+          Which pods are restarting in AI?
+          <small>Find restart and crash patterns.</small>
+        </button>
+        <button class="prompt-card" type="button" data-prompt="What is the health status of Prometheus right now?">
+          Is Prometheus healthy?
+          <small>Quick Prometheus health check.</small>
+        </button>
+        <button class="prompt-card" type="button" data-prompt="Show me logs from ollama in the ai namespace">
+          Show logs from Ollama
+          <small>Pull recent pod logs for a specific workload.</small>
+        </button>
+        <button class="prompt-card" type="button" data-prompt='Search for "timeout" in the ai namespace'>
+          Search for timeout errors
+          <small>Regex log search scoped to AI.</small>
+        </button>
+        <button class="prompt-card" type="button" data-prompt="What namespaces have logs in Loki?">
+          What namespaces have logs?
+          <small>List namespaces seen by Loki.</small>
+        </button>
+      </div>
     </section>
 
     <div class="layout">
@@ -231,6 +291,7 @@ INDEX_HTML = """<!DOCTYPE html>
     const toolArgsEl = document.getElementById("toolArgs");
     const summaryEl = document.getElementById("summary");
     const rawResultEl = document.getElementById("rawResult");
+    const promptEls = document.querySelectorAll(".prompt-card");
 
     async function askQuestion() {
       const question = questionEl.value.trim();
@@ -273,6 +334,12 @@ INDEX_HTML = """<!DOCTYPE html>
     }
 
     submitEl.addEventListener("click", askQuestion);
+    promptEls.forEach((element) => {
+      element.addEventListener("click", () => {
+        questionEl.value = element.dataset.prompt || "";
+        askQuestion();
+      });
+    });
     questionEl.addEventListener("keydown", (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
         askQuestion();
