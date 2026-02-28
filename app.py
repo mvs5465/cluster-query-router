@@ -19,9 +19,9 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import SpanKind, Status, StatusCode
 from fastapi import FastAPI, HTTPException
 from fastapi import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
-from prometheus_client import Counter, Histogram, make_asgi_app
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -856,7 +856,6 @@ class QuestionRouter:
 
 app = FastAPI(title="cluster-query-router")
 configure_tracing()
-metrics_app = make_asgi_app()
 router = QuestionRouter()
 loki_client = MCPHTTPClient("loki", os.getenv("LOKI_MCP_URL", "http://loki-mcp.monitoring.svc.cluster.local:8000"))
 prometheus_client = MCPHTTPClient(
@@ -907,13 +906,14 @@ async def trace_requests(request: Request, call_next):
             span.set_status(Status(StatusCode.ERROR))
         return response
 
-
-app.mount("/metrics", metrics_app)
-
-
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     return HTMLResponse(INDEX_HTML)
+
+
+@app.get("/metrics")
+async def metrics() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/health")
