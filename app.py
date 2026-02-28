@@ -26,16 +26,19 @@ INDEX_HTML = """<!DOCTYPE html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cluster Query Router</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23020617'/%3E%3Crect x='6' y='6' width='52' height='52' rx='13' fill='%230f172a'/%3E%3Cpath d='M18 24h12' stroke='%2322d3ee' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M18 40h12' stroke='%2360a5fa' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M34 20l12 8-12 8' fill='none' stroke='%23a5f3fc' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M34 36l12 8-12 8' transform='translate(0 -8)' fill='none' stroke='%23bfdbfe' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E" type="image/svg+xml">
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f5f2e8;
-      --panel: #fffdf7;
-      --ink: #1f1f1a;
-      --muted: #5a5a4f;
-      --border: #d9d1ba;
-      --accent: #1f6f5f;
-      --accent-ink: #f6fffc;
+      color-scheme: dark;
+      --bg: #09111f;
+      --panel: rgba(15, 23, 42, 0.9);
+      --panel-strong: rgba(30, 41, 59, 0.92);
+      --ink: #e5e7eb;
+      --muted: #94a3b8;
+      --border: rgba(148, 163, 184, 0.18);
+      --accent: #22d3ee;
+      --accent-ink: #042f2e;
+      --accent-soft: rgba(34, 211, 238, 0.14);
     }
 
     * { box-sizing: border-box; }
@@ -45,8 +48,9 @@ INDEX_HTML = """<!DOCTYPE html>
       min-height: 100vh;
       font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
       background:
-        radial-gradient(circle at top right, rgba(31, 111, 95, 0.12), transparent 32%),
-        linear-gradient(180deg, #f7f4ea 0%, var(--bg) 100%);
+        radial-gradient(circle at top right, rgba(34, 211, 238, 0.16), transparent 26%),
+        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.14), transparent 32%),
+        linear-gradient(180deg, #020617 0%, var(--bg) 100%);
       color: var(--ink);
     }
 
@@ -79,7 +83,7 @@ INDEX_HTML = """<!DOCTYPE html>
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 20px;
-      box-shadow: 0 18px 48px rgba(40, 40, 32, 0.06);
+      box-shadow: 0 18px 48px rgba(2, 8, 23, 0.34);
     }
 
     label {
@@ -98,11 +102,11 @@ INDEX_HTML = """<!DOCTYPE html>
       padding: 14px;
       font: inherit;
       color: inherit;
-      background: #fffef9;
+      background: rgba(15, 23, 42, 0.88);
     }
 
     textarea:focus {
-      outline: 2px solid rgba(31, 111, 95, 0.22);
+      outline: 2px solid rgba(34, 211, 238, 0.22);
       border-color: var(--accent);
     }
 
@@ -124,7 +128,7 @@ INDEX_HTML = """<!DOCTYPE html>
     .tab-button {
       border: 1px solid var(--border);
       border-radius: 999px;
-      background: #f9f5e9;
+      background: rgba(15, 23, 42, 0.82);
       color: var(--ink);
       padding: 10px 16px;
     }
@@ -152,7 +156,7 @@ INDEX_HTML = """<!DOCTYPE html>
     .prompt-card {
       border: 1px solid var(--border);
       border-radius: 14px;
-      background: #fbf8ee;
+      background: var(--panel-strong);
       padding: 12px 14px;
       text-align: left;
       color: var(--ink);
@@ -165,7 +169,7 @@ INDEX_HTML = """<!DOCTYPE html>
     .prompt-card:hover {
       transform: translateY(-1px);
       border-color: var(--accent);
-      background: #fffdf4;
+      background: rgba(30, 41, 59, 0.98);
     }
 
     .prompt-card small {
@@ -220,7 +224,7 @@ INDEX_HTML = """<!DOCTYPE html>
       gap: 6px;
       border-radius: 999px;
       border: 1px solid var(--border);
-      background: #faf7ed;
+      background: rgba(15, 23, 42, 0.86);
       padding: 7px 12px;
       font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace;
       font-size: 0.85rem;
@@ -239,7 +243,7 @@ INDEX_HTML = """<!DOCTYPE html>
       font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace;
       font-size: 0.92rem;
       line-height: 1.45;
-      color: #1e2b27;
+      color: #dbeafe;
     }
 
     .empty {
