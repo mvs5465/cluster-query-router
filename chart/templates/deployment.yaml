@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cluster-query-router.fullname" . }}
+  labels:
+    {{- include "cluster-query-router.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cluster-query-router.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cluster-query-router.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: server
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.port }}
+          protocol: TCP
+        env:
+        - name: LOKI_MCP_URL
+          value: {{ .Values.env.LOKI_MCP_URL | quote }}
+        - name: PROMETHEUS_MCP_URL
+          value: {{ .Values.env.PROMETHEUS_MCP_URL | quote }}
+        - name: OLLAMA_URL
+          value: {{ .Values.env.OLLAMA_URL | quote }}
+        - name: OLLAMA_MODEL
+          value: {{ .Values.env.OLLAMA_MODEL | quote }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
