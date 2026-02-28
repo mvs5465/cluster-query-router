@@ -12,6 +12,10 @@ It maps a small set of plain-English questions to direct MCP tool calls, then us
 
 ## API
 
+`GET /`
+
+A small web UI for asking questions, viewing the summary, and inspecting the raw tool output.
+
 `POST /ask`
 
 ```json
@@ -21,6 +25,13 @@ It maps a small set of plain-English questions to direct MCP tool calls, then us
 ```
 
 The response includes the matched route, raw MCP result, and a short summary.
+
+Open the UI locally with:
+
+```bash
+python app.py
+# then visit http://127.0.0.1:8080
+```
 
 ## Local run
 

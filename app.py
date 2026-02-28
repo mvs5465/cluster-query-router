@@ -10,6 +10,7 @@ from typing import Any
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 
@@ -18,6 +19,269 @@ MCP_HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json, text/event-stream",
 }
+
+INDEX_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cluster Query Router</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f2e8;
+      --panel: #fffdf7;
+      --ink: #1f1f1a;
+      --muted: #5a5a4f;
+      --border: #d9d1ba;
+      --accent: #1f6f5f;
+      --accent-ink: #f6fffc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      background:
+        radial-gradient(circle at top right, rgba(31, 111, 95, 0.12), transparent 32%),
+        linear-gradient(180deg, #f7f4ea 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .layout {
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 18px 48px rgba(40, 40, 32, 0.06);
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 108px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      font: inherit;
+      color: inherit;
+      background: #fffef9;
+    }
+
+    textarea:focus {
+      outline: 2px solid rgba(31, 111, 95, 0.22);
+      border-color: var(--accent);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font: inherit;
+      font-weight: 700;
+      padding: 12px 18px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #faf7ed;
+      padding: 7px 12px;
+      font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace;
+      font-size: 0.85rem;
+    }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, monospace;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: #1e2b27;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    @media (min-width: 860px) {
+      .layout {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      }
+
+      .panel.wide {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Cluster Query Router</h1>
+    <p class="intro">Ask a plain-English cluster question. The app routes it to a real MCP tool, then summarizes the result.</p>
+
+    <section class="panel wide">
+      <label for="question">Question</label>
+      <textarea id="question" spellcheck="false">What errors are happening in my cluster right now?</textarea>
+      <div class="controls">
+        <button id="submit" type="button">Ask</button>
+        <span class="status" id="status">Ready.</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="chips">
+          <span class="chip">Route: <strong id="route">-</strong></span>
+          <span class="chip">Tool: <strong id="tool">-</strong></span>
+        </div>
+        <h2 class="section-title">Summary</h2>
+        <pre id="summary" class="empty">No result yet.</pre>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Tool Args</h2>
+        <pre id="toolArgs" class="empty">No result yet.</pre>
+      </section>
+
+      <section class="panel wide">
+        <h2 class="section-title">Raw Result</h2>
+        <pre id="rawResult" class="empty">No result yet.</pre>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const questionEl = document.getElementById("question");
+    const submitEl = document.getElementById("submit");
+    const statusEl = document.getElementById("status");
+    const routeEl = document.getElementById("route");
+    const toolEl = document.getElementById("tool");
+    const toolArgsEl = document.getElementById("toolArgs");
+    const summaryEl = document.getElementById("summary");
+    const rawResultEl = document.getElementById("rawResult");
+
+    async function askQuestion() {
+      const question = questionEl.value.trim();
+      if (!question) {
+        statusEl.textContent = "Enter a question first.";
+        questionEl.focus();
+        return;
+      }
+
+      submitEl.disabled = true;
+      statusEl.textContent = "Running query...";
+
+      try {
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+
+        routeEl.textContent = data.route;
+        toolEl.textContent = data.tool;
+        toolArgsEl.textContent = JSON.stringify(data.tool_args, null, 2);
+        summaryEl.textContent = data.summary;
+        rawResultEl.textContent = data.raw_result;
+
+        toolArgsEl.classList.remove("empty");
+        summaryEl.classList.remove("empty");
+        rawResultEl.classList.remove("empty");
+        statusEl.textContent = "Done.";
+      } catch (error) {
+        statusEl.textContent = error.message;
+      } finally {
+        submitEl.disabled = false;
+      }
+    }
+
+    submitEl.addEventListener("click", askQuestion);
+    questionEl.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        askQuestion();
+      }
+    });
+  </script>
+</body>
+</html>
+"""
 
 
 @dataclass
@@ -274,6 +538,11 @@ summarizer = OllamaSummarizer(
     os.getenv("OLLAMA_URL", "http://ollama-external.ai.svc.cluster.local:11434"),
     os.getenv("OLLAMA_MODEL", "phi4-mini:latest"),
 )
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index() -> HTMLResponse:
+    return HTMLResponse(INDEX_HTML)
 
 
 @app.get("/health")
