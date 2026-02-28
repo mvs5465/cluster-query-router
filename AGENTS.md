@@ -27,6 +27,11 @@
 ## Helm And Releases
 - If a PR changes anything under `chart/`, bump `chart/Chart.yaml` `version` in the same PR.
 - Bump `appVersion` when the deployed application behavior materially changes.
+- Treat chart and app versions as release metadata, not deployment selectors; ArgoCD deploys from `main`.
+- Use loose semver tracking:
+  - bump `version` for chart changes, usually patch unless the chart interface changes materially
+  - bump `appVersion` for meaningful app changes, including routing, UI, or behavior changes
+  - keeping `version` and `appVersion` aligned is acceptable when that is the simplest honest representation
 - If ports, env vars, or image expectations change, update the matching ArgoCD app in `local-k8s-apps`.
 
 ## Verification
