@@ -31,6 +31,14 @@ spec:
           value: {{ .Values.env.OLLAMA_URL | quote }}
         - name: OLLAMA_MODEL
           value: {{ .Values.env.OLLAMA_MODEL | quote }}
+        {{- if .Values.otel.endpoint }}
+        - name: OTEL_SERVICE_NAME
+          value: {{ .Values.otel.serviceName | quote }}
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: {{ .Values.otel.endpoint | quote }}
+        - name: OTEL_EXPORTER_OTLP_INSECURE
+          value: {{ .Values.otel.insecure | quote }}
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

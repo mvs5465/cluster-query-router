@@ -5,11 +5,19 @@ from __future__ import annotations
 import json
 import os
 import re
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace import SpanKind, Status, StatusCode
 from fastapi import FastAPI, HTTPException
+from fastapi import Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
@@ -19,6 +27,8 @@ MCP_HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json, text/event-stream",
 }
+TRACER_NAME = "cluster-query-router"
+_TRACING_CONFIGURED = False
 
 INDEX_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -503,6 +513,77 @@ INDEX_HTML = """<!DOCTYPE html>
 """
 
 
+def _otlp_endpoint() -> str:
+    return (
+        os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+        or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+        or ""
+    ).strip()
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _otlp_insecure(endpoint: str) -> bool:
+    if not endpoint:
+        return False
+    if "OTEL_EXPORTER_OTLP_TRACES_INSECURE" in os.environ:
+        return _env_flag("OTEL_EXPORTER_OTLP_TRACES_INSECURE", False)
+    if "OTEL_EXPORTER_OTLP_INSECURE" in os.environ:
+        return _env_flag("OTEL_EXPORTER_OTLP_INSECURE", False)
+    return endpoint.startswith("http://")
+
+
+def configure_tracing() -> bool:
+    global _TRACING_CONFIGURED
+
+    endpoint = _otlp_endpoint()
+    if not endpoint:
+        return False
+    if _TRACING_CONFIGURED:
+        return True
+
+    provider = TracerProvider(
+        resource=Resource.create(
+            {"service.name": os.environ.get("OTEL_SERVICE_NAME", TRACER_NAME)}
+        )
+    )
+    exporter = OTLPSpanExporter(
+        endpoint=endpoint,
+        insecure=_otlp_insecure(endpoint),
+    )
+    provider.add_span_processor(BatchSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+    _TRACING_CONFIGURED = True
+    return True
+
+
+async def traced_post(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    name: str,
+    **kwargs,
+) -> httpx.Response:
+    tracer = trace.get_tracer(TRACER_NAME)
+    parsed = urlparse(url)
+    with tracer.start_as_current_span(name, kind=SpanKind.CLIENT) as span:
+        span.set_attribute("http.request.method", "POST")
+        span.set_attribute("url.path", parsed.path or "/")
+        if parsed.netloc:
+            span.set_attribute("server.address", parsed.netloc)
+
+        response = await client.post(url, **kwargs)
+        span.set_attribute("http.response.status_code", response.status_code)
+        if response.is_error:
+            span.set_status(Status(StatusCode.ERROR))
+        return response
+
+
 @dataclass
 class ToolRequest:
     server: str
@@ -545,8 +626,10 @@ class MCPHTTPClient:
                     "arguments": arguments,
                 },
             }
-            response = await client.post(
+            response = await traced_post(
+                client,
                 self.endpoint,
+                name=f"{self.name}.tools_call",
                 headers={**MCP_HEADERS, "mcp-session-id": session_id},
                 json=payload,
             )
@@ -578,7 +661,13 @@ class MCPHTTPClient:
                 },
             },
         }
-        response = await client.post(self.endpoint, headers=MCP_HEADERS, json=payload)
+        response = await traced_post(
+            client,
+            self.endpoint,
+            name=f"{self.name}.initialize",
+            headers=MCP_HEADERS,
+            json=payload,
+        )
         response.raise_for_status()
         session_id = response.headers.get("mcp-session-id")
         if not session_id:
@@ -592,8 +681,10 @@ class MCPHTTPClient:
             "method": "notifications/initialized",
             "params": {},
         }
-        response = await client.post(
+        response = await traced_post(
+            client,
             self.endpoint,
+            name=f"{self.name}.initialized_notification",
             headers={**MCP_HEADERS, "mcp-session-id": session_id},
             json=payload,
         )
@@ -630,7 +721,12 @@ class OllamaSummarizer:
             "stream": False,
         }
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.post(f"{self.base_url}/api/generate", json=payload)
+            response = await traced_post(
+                client,
+                f"{self.base_url}/api/generate",
+                name="ollama.generate",
+                json=payload,
+            )
             response.raise_for_status()
             data = response.json()
         summary = data.get("response", "").strip()
@@ -747,6 +843,7 @@ class QuestionRouter:
 
 
 app = FastAPI(title="cluster-query-router")
+configure_tracing()
 router = QuestionRouter()
 loki_client = MCPHTTPClient("loki", os.getenv("LOKI_MCP_URL", "http://loki-mcp.monitoring.svc.cluster.local:8000"))
 prometheus_client = MCPHTTPClient(
@@ -757,6 +854,30 @@ summarizer = OllamaSummarizer(
     os.getenv("OLLAMA_URL", "http://ollama-external.ai.svc.cluster.local:11434"),
     os.getenv("OLLAMA_MODEL", "phi4-mini:latest"),
 )
+
+
+@app.middleware("http")
+async def trace_requests(request: Request, call_next):
+    tracer = trace.get_tracer(TRACER_NAME)
+    with tracer.start_as_current_span(
+        f"{request.method} {request.url.path}",
+        kind=SpanKind.SERVER,
+    ) as span:
+        span.set_attribute("http.request.method", request.method)
+        span.set_attribute("url.path", request.url.path)
+        if request.headers.get("host"):
+            span.set_attribute("server.address", request.headers["host"])
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR))
+            raise
+
+        span.set_attribute("http.response.status_code", response.status_code)
+        if response.status_code >= 500:
+            span.set_status(Status(StatusCode.ERROR))
+        return response
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -34,6 +34,11 @@ env:
   OLLAMA_URL: ""
   OLLAMA_MODEL: "phi4-mini:latest"
 
+otel:
+  endpoint: ""
+  insecure: true
+  serviceName: "cluster-query-router"
+
 nodeSelector: {}
 tolerations: []
 affinity: {}
