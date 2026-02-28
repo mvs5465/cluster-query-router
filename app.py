@@ -26,7 +26,7 @@ INDEX_HTML = """<!DOCTYPE html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cluster Query Router</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23020617'/%3E%3Crect x='6' y='6' width='52' height='52' rx='13' fill='%2322d3ee'/%3E%3Cpath d='M18 18h13c10 0 15 5 15 14s-5 14-15 14H18V18zm8 8v12h5c4 0 7-1 7-6s-3-6-7-6h-5z' fill='%2308212e'/%3E%3C/svg%3E" type="image/svg+xml">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23020617'/%3E%3Crect x='6' y='6' width='52' height='52' rx='13' fill='%230f172a'/%3E%3Cpath d='M18 24h12' stroke='%2322d3ee' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M18 40h12' stroke='%2360a5fa' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M34 20l12 8-12 8' fill='none' stroke='%23a5f3fc' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M34 36l12 8-12 8' transform='translate(0 -8)' fill='none' stroke='%23bfdbfe' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' opacity='0.85'/%3E%3C/svg%3E" type="image/svg+xml">
   <style>
     :root {
       color-scheme: dark;
