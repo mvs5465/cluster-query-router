@@ -12,6 +12,14 @@ service:
   type: ClusterIP
   port: 8080
 
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: ""
+  path: /
+  pathType: Prefix
+
 resources:
   requests:
     memory: "128Mi"
@@ -21,6 +29,9 @@ resources:
     cpu: "500m"
 
 env:
+  LOKI_MCP_URL: ""
+  PROMETHEUS_MCP_URL: ""
+  OLLAMA_URL: ""
   OLLAMA_MODEL: "phi4-mini:latest"
 
 nodeSelector: {}
