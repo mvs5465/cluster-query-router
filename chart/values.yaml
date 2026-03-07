@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/mvs5465/cluster-query-router
+  repository: ghcr.io/mvs5465-test/cluster-query-router
   tag: "main"
   pullPolicy: Always
 
