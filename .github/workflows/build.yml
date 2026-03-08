@@ -19,7 +19,6 @@ jobs:
     uses: mvs5465-test/.github/.github/workflows/docker-build.yml@main
     with:
       image_name: ${{ github.repository }}
-      push: true
       tags: |
         type=ref,event=branch
         type=semver,pattern={{version}}
