@@ -707,7 +707,15 @@ class MCPHTTPClient:
     def _extract_event_json(event_body: str) -> dict[str, Any]:
         for line in event_body.splitlines():
             if line.startswith("data: "):
-                return json.loads(line[6:])
+                payload = line[6:].strip()
+                if not payload:
+                    continue
+                try:
+                    data = json.loads(payload)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(data, dict):
+                    return data
         raise RuntimeError("No MCP event payload found in response")
 
 
